@@ -2,79 +2,104 @@ import { css } from 'uebersicht';
 
 // Root node CSS
 export const className = css`
+  & table {
+    border-collapse: collapse;
+    margin-right:    auto;
+    color:           white;
+    font-size:       12px;
+    font-weight:     normal;
+    letter-spacing:  0.025em;
+    line-height:     .9em;
+  }
+  & table td {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+  & table td + td {
+    border-left: 1px solid rgba(255, 255, 255, 0.5);
+    padding-left: 10px;
+  }
+  & table td:not(:last-child) {
+    padding-right: 10px;
+  }
+
   min-width: 150px;
 
-  top:    1em;
+  top:    32px;
   bottom: 0;
-  right:  3%;
-
-  font-family:     'SFNS Display', 'Helvetica Neue', sans-serif;
-  font-smoothing:  antialiased;
-  color:           white;
-  font-size:       32px;
-  font-weight:     bold;
-  letter-spacing:  0.025em;
-  line-height:     .9em;
-
-  text-align:      right;
-  text-transform:  uppercase;
+  left:  3%;
 
   opacity: 0.5;
 `;
 
+const titleCss = css`
+  font-size:       16px;
+  padding-bottom:  16px;
+`;
+
+const contentCss = css`
+  font-family:     'SFNS Display', 'Helvetica Neue', sans-serif;
+  font-smoothing:  antialiased;
+  color:           white;
+  font-size:       12px;
+  font-weight:     bold;
+  letter-spacing:  0.025em;
+  line-height:     .9em;
+
+  display:         flex;
+  justify-items:   flex-begin;
+  flex-direction:  column;
+`;
+
 export const command = 'stig list | grep -v discovering | cut -f1,10,12';
 
-// Example output:
-//
-// 586839929	0	[ www.Speed.Cd ] - American.Dad.S06E14.720p.HDTV.X264-DIMENSION
-// 586015924	0	[ www.Speed.Cd ] - American.Dad.S06E16.720p.HDTV.X264-DIMENSION
-// 585641647	0	[ www.Speed.Cd ] - American.Dad.S06E17.720p.HDTV.X264-DIMENSION
-// 585706794	0	[ www.Speed.Cd ] - American.Dad.S06E18.720p.HDTV.X264-DIMENSION
-// 206159025	0	[ www.Speed.Cd ] - American.Dad.S07E16.720p.HDTV.X264-DIMENSION
-// 558379093	0	[ www.Speed.Cd ] - Key.and.Peele.S01E02.720p.HDTV.x264-MOMENTUM
-// 585486375	0	[ www.Speed.Cd ] - South.Park.S15E01.720p.HDTV.X264-DIMENSION
-// 316283776	0	[ www.Speed.Cd ] - South.Park.S15E08.720p.HDTV.x264-ORENJI
-// 461251722	0	[ www.Speed.Cd ] - South.Park.S15E09.720p.HDTV.x264-IMMERSE
-// 386610902	0	[ www.Speed.Cd ] - South.Park.S15E14.720p.HDTV.x264-IMMERSE
-// 335881857	0	[ www.Speed.Cd ] - South.Park.S16E03.720p.HDTV.x264-2HD
-// 183474340	0	American Dad S06E06 HDTV XviD.LOL
-// 184069851	0	American Dad S07E08 HDTV XviD-LOL[ettv]
-// 183252105	0	American Dad S07E09 HDTV XviD-LOL[ettv]
-// 183301623	0	American Dad S07E11 HDTV XviD-LOL[ettv]
-// 74787774	0	American Dad S07E15 HDTV x264-LOL[ettv]
-// 75820628	0	American Dad S09E20 HDTV x264-2HD[ettv]
-// 182137254	0	American.Dad.S04E08.PDTV.XviD-XOR.avi
-// 183415398	0	American.Dad.S04E10.Family.Affair.PDTV.XviD-FQM.avi
-// 183510058	0	American.Dad.S04E11.PDTV.XviD-XOR.avi
-
-export const refreshFrequency = (1000 * 10); // 10 seconds
+export const refreshFrequency = (1000 * 7); // 7 seconds
 
 function humanFileSize(size) {
   const i = size == 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024));
   return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 };
 
-const renderTitle = (active, totalSize) => {
-  return active.length ? (
-    <span>
-      Downloading {active.length} torrent{active.length !== 1 ? 's' : ''} ({totalSize} total)
-    </span>
-  ) : null;
+const NumInactive = ({ numInactive }) => {
+  return (
+    <span>{numInactive} inactive torrents</span>
+    );
+  };
+  
+  const TitleArea = ({ active, totalSize, numInactive }) => {
+    const seperator = (active.length && numInactive) ? (
+      <span style={{ padding: '0 6px' }}> — </span>
+      ) : null;
+      return (
+        <div className={titleCss}>
+      {active.length ? (
+        <span>
+          Downloading {active.length} torrent{active.length !== 1 ? 's' : ''} ({humanFileSize(totalSize)} total)
+        </span>
+      ) : null}
+      {seperator}
+      {numInactive ? (
+        <NumInactive numInactive={numInactive} />
+        ) : null}
+    </div>
+  );
 };
 
-const renderActiveRow = ({ name, size, speed }) => {
-  // TODO
-  return null;
+const ActiveRow = ({ torrent: { name, size, speed } }) => {
+  return (
+    <tr>
+      <td>{name}</td>
+      <td>{humanFileSize(size)}</td>
+      <td>{humanFileSize(speed)}/s</td>
+    </tr>
+  );
 };
 
-const renderNumInactive = (numInactive) => {
-  // TODO
-  return null;
-};
+const MAX_ACTIVE_ROWS = 10;
 
 export const render = ({ output, error }) => {
   if (error || !output) {
-    return <span>{error || null}</span>
+    return <span>{error || null}</span>;
   }
   const active = [];
   let totalDownloadingSize = 0;
@@ -92,10 +117,21 @@ export const render = ({ output, error }) => {
     }
   }
   return (
-    <div id="content">
-      {renderTitle(active, totalDownloadingSize)}
-      {active.map(torrent => renderActiveRow(torrent))}
-      {renderNumInactive(numInactive)}
+    <div className={contentCss}>
+      <TitleArea active={active} totalSize={totalDownloadingSize} numInactive={numInactive} />
+      <table>
+        <tbody>
+          {
+            (active.length > MAX_ACTIVE_ROWS ? active.slice(0, MAX_ACTIVE_ROWS) : active)
+              .map(torrent => <ActiveRow key={torrent.name} torrent={torrent} />)
+          }
+        </tbody>
+        {active.length > MAX_ACTIVE_ROWS ? (
+          <tfoot>
+            <tr><td colSpan={100}>...</td></tr>
+          </tfoot>
+        ) : null}
+      </table>
     </div>
   );
 };
